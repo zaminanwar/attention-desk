@@ -75,11 +75,20 @@
             cursor: pointer;
             border-radius: 3px;
             transition: all 0.15s;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: inherit;
         }
 
         .nav-item:hover {
             background: var(--bg-tertiary);
             color: var(--text-primary);
+        }
+
+        .nav-item:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: -2px;
         }
 
         .nav-item.active {
@@ -230,6 +239,11 @@
             color: var(--text-secondary);
         }
 
+        .panel-action:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: -2px;
+        }
+
         .panel-action.active { color: var(--accent-orange); }
 
         .panel-content {
@@ -270,11 +284,20 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .data-table tr:hover { background: var(--bg-highlight); }
+        .data-table tbody tr {
+            cursor: pointer;
+        }
+
+        .data-table tbody tr:hover { background: var(--bg-highlight); }
+
+        .data-table tbody tr:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: -2px;
+        }
 
         .data-table tr.selected {
             background: var(--bg-tertiary);
-            border-left: 2px solid var(--accent-orange);
+            box-shadow: inset 2px 0 0 var(--accent-orange);
         }
 
         /* Row Components */
@@ -294,6 +317,19 @@
 
         .source-badge.youtube { background: var(--youtube); }
         .source-badge.reddit { background: var(--reddit); }
+
+        /* Screen reader only text */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
 
         .post-title {
             font-size: 12px;
@@ -409,6 +445,11 @@
         .cluster-item:hover {
             border-color: var(--border-bright);
             background: var(--bg-tertiary);
+        }
+
+        .cluster-item:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: -2px;
         }
 
         .cluster-header {
@@ -660,6 +701,11 @@
             background: var(--bg-tertiary);
         }
 
+        .note-item:focus-visible {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: -2px;
+        }
+
         .note-icon {
             font-size: 20px;
             opacity: 0.6;
@@ -797,7 +843,13 @@
         .view { display: none; }
         .view.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 
-        /* Scrollbar */
+        /* Scrollbar - Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-bright) var(--bg-primary);
+        }
+
+        /* Scrollbar - WebKit (Chrome, Safari, Edge) */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -936,12 +988,12 @@
     <header class="header">
         <div class="header-left">
             <div class="logo">ATTENTION FLOW DESK</div>
-            <nav class="nav">
-                <div class="nav-item active" data-view="flow">Flow <kbd>1</kbd></div>
-                <div class="nav-item" data-view="actors">Actors <kbd>2</kbd></div>
-                <div class="nav-item" data-view="clusters">Clusters <kbd>3</kbd></div>
-                <div class="nav-item" data-view="notes">Notes <kbd>4</kbd></div>
-                <div class="nav-item" data-view="status">Status <kbd>5</kbd></div>
+            <nav class="nav" role="tablist" aria-label="Main navigation">
+                <button class="nav-item active" id="tab-flow" data-view="flow" role="tab" aria-selected="true" aria-controls="view-flow">Flow <kbd>1</kbd></button>
+                <button class="nav-item" id="tab-actors" data-view="actors" role="tab" aria-selected="false" aria-controls="view-actors">Actors <kbd>2</kbd></button>
+                <button class="nav-item" id="tab-clusters" data-view="clusters" role="tab" aria-selected="false" aria-controls="view-clusters">Clusters <kbd>3</kbd></button>
+                <button class="nav-item" id="tab-notes" data-view="notes" role="tab" aria-selected="false" aria-controls="view-notes">Notes <kbd>4</kbd></button>
+                <button class="nav-item" id="tab-status" data-view="status" role="tab" aria-selected="false" aria-controls="view-status">Status <kbd>5</kbd></button>
             </nav>
         </div>
         <div class="header-right">
@@ -961,7 +1013,7 @@
     <main class="main" id="main">
         <div class="content">
             <!-- FLOW VIEW -->
-            <div class="view active" id="view-flow">
+            <div class="view active" id="view-flow" role="tabpanel" aria-labelledby="tab-flow">
                 <div class="stats-bar">
                     <div class="stat-box">
                         <div class="stat-label">Top Movers (24h)</div>
@@ -999,13 +1051,13 @@
                             <table class="data-table" id="movers-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 32px">#</th>
-                                        <th>Post</th>
-                                        <th>Actor</th>
-                                        <th class="numeric">Flow</th>
-                                        <th class="numeric">Z-Score</th>
-                                        <th>Velocity 6h</th>
-                                        <th class="numeric">Age</th>
+                                        <th scope="col" style="width: 32px">#</th>
+                                        <th scope="col">Post</th>
+                                        <th scope="col">Actor</th>
+                                        <th scope="col" class="numeric">Flow</th>
+                                        <th scope="col" class="numeric">Z-Score</th>
+                                        <th scope="col">Velocity 6h</th>
+                                        <th scope="col" class="numeric">Age</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1145,7 +1197,7 @@
             </div>
 
             <!-- ACTORS VIEW -->
-            <div class="view" id="view-actors">
+            <div class="view" id="view-actors" role="tabpanel" aria-labelledby="tab-actors">
                 <div class="stats-bar">
                     <div class="stat-box">
                         <div class="stat-label">Total Actors</div>
@@ -1180,17 +1232,17 @@
                             </div>
                         </div>
                         <div class="panel-content">
-                            <table class="data-table">
+                            <table class="data-table" id="actors-table">
                                 <thead>
                                     <tr>
-                                        <th>Source</th>
-                                        <th>Actor</th>
-                                        <th class="numeric">Posts</th>
-                                        <th>Baseline</th>
-                                        <th class="numeric">Median Vel</th>
-                                        <th class="numeric">MAD</th>
-                                        <th>Last Post</th>
-                                        <th>Status</th>
+                                        <th scope="col">Source</th>
+                                        <th scope="col">Actor</th>
+                                        <th scope="col" class="numeric">Posts</th>
+                                        <th scope="col">Baseline</th>
+                                        <th scope="col" class="numeric">Median Vel</th>
+                                        <th scope="col" class="numeric">MAD</th>
+                                        <th scope="col">Last Post</th>
+                                        <th scope="col">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1282,7 +1334,7 @@
             </div>
 
             <!-- CLUSTERS VIEW -->
-            <div class="view" id="view-clusters">
+            <div class="view" id="view-clusters" role="tabpanel" aria-labelledby="tab-clusters">
                 <div class="stats-bar">
                     <div class="stat-box">
                         <div class="stat-label">Active Clusters</div>
@@ -1318,10 +1370,10 @@
                                 <table class="data-table" style="margin-bottom: 24px;">
                                     <thead>
                                         <tr>
-                                            <th>Post</th>
-                                            <th>Actor</th>
-                                            <th class="numeric">Flow</th>
-                                            <th class="numeric">Published</th>
+                                            <th scope="col">Post</th>
+                                            <th scope="col">Actor</th>
+                                            <th scope="col" class="numeric">Flow</th>
+                                            <th scope="col" class="numeric">Published</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1361,7 +1413,7 @@
             </div>
 
             <!-- NOTES VIEW -->
-            <div class="view" id="view-notes">
+            <div class="view" id="view-notes" role="tabpanel" aria-labelledby="tab-notes">
                 <div class="stats-bar">
                     <div class="stat-box">
                         <div class="stat-label">Total Notes</div>
@@ -1441,7 +1493,7 @@
             </div>
 
             <!-- STATUS VIEW -->
-            <div class="view" id="view-status">
+            <div class="view" id="view-status" role="tabpanel" aria-labelledby="tab-status">
                 <div class="panels single">
                     <div class="panel">
                         <div class="panel-header">
@@ -1698,9 +1750,9 @@
     </main>
 
     <!-- Help Modal -->
-    <div class="modal-overlay" id="help-modal">
+    <div class="modal-overlay" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
         <div class="modal">
-            <div class="modal-title">Keyboard Shortcuts</div>
+            <h2 class="modal-title" id="help-modal-title">Keyboard Shortcuts</h2>
             <div class="shortcut-list">
                 <div class="shortcut-keys"><kbd>1</kbd>-<kbd>5</kbd></div>
                 <div class="shortcut-desc">Switch views (Flow, Actors, Clusters, Notes, Status)</div>
@@ -1738,16 +1790,25 @@
         const views = document.querySelectorAll('.view');
         const main = document.getElementById('main');
         const sidebar = document.getElementById('sidebar');
+        let currentView = 'flow';
+        let sidebarVisible = true;
 
         function switchView(viewId) {
-            navItems.forEach(item => item.classList.remove('active'));
+            // Update aria-selected on tabs
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                item.setAttribute('aria-selected', 'false');
+            });
             views.forEach(view => view.classList.remove('active'));
 
-            document.querySelector(`[data-view="${viewId}"]`).classList.add('active');
+            const activeTab = document.querySelector(`[data-view="${viewId}"]`);
+            activeTab.classList.add('active');
+            activeTab.setAttribute('aria-selected', 'true');
             document.getElementById(`view-${viewId}`).classList.add('active');
+            currentView = viewId;
 
-            // Show/hide sidebar based on view
-            if (viewId === 'flow') {
+            // Show/hide sidebar based on view (only Flow has sidebar)
+            if (viewId === 'flow' && sidebarVisible) {
                 main.classList.remove('no-sidebar');
                 sidebar.style.display = 'flex';
             } else {
@@ -1762,25 +1823,49 @@
             });
         });
 
-        // Table row selection
+        // Table row selection - supports multiple tables
         const moversTable = document.getElementById('movers-table');
+        const actorsTable = document.getElementById('actors-table');
         let selectedIndex = 0;
 
+        function getActiveTable() {
+            if (currentView === 'flow') return moversTable;
+            if (currentView === 'actors') return actorsTable;
+            return null;
+        }
+
         function selectRow(index) {
-            const rows = moversTable.querySelectorAll('tbody tr');
+            const table = getActiveTable();
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr');
             rows.forEach(row => row.classList.remove('selected'));
             if (rows[index]) {
                 rows[index].classList.add('selected');
+                rows[index].scrollIntoView({ block: 'nearest' });
                 selectedIndex = index;
             }
         }
 
-        moversTable.querySelectorAll('tbody tr').forEach((row, index) => {
-            row.addEventListener('click', () => selectRow(index));
+        // Add click handlers for both tables
+        [moversTable, actorsTable].forEach(table => {
+            if (table) {
+                table.querySelectorAll('tbody tr').forEach((row, index) => {
+                    row.addEventListener('click', () => {
+                        selectedIndex = index;
+                        selectRow(index);
+                    });
+                });
+            }
         });
 
         // Keyboard navigation
         const helpModal = document.getElementById('help-modal');
+
+        function showNotification(message) {
+            // Simple notification for unimplemented features (mockup)
+            console.log(message);
+        }
 
         document.addEventListener('keydown', (e) => {
             // Ignore if typing in input
@@ -1793,20 +1878,56 @@
                 return;
             }
 
+            const table = getActiveTable();
+            const rowCount = table ? table.querySelectorAll('tbody tr').length : 0;
+
             switch(e.key) {
                 case 'j':
-                    selectRow(Math.min(selectedIndex + 1, moversTable.querySelectorAll('tbody tr').length - 1));
+                    if (rowCount > 0) {
+                        selectRow(Math.min(selectedIndex + 1, rowCount - 1));
+                    }
                     break;
                 case 'k':
-                    selectRow(Math.max(selectedIndex - 1, 0));
+                    if (rowCount > 0) {
+                        selectRow(Math.max(selectedIndex - 1, 0));
+                    }
+                    break;
+                case 'o':
+                case 'Enter':
+                    // Open selected item (mockup - would navigate to detail)
+                    if (table) {
+                        const selectedRow = table.querySelector('tbody tr.selected');
+                        if (selectedRow) {
+                            showNotification('Opening selected item...');
+                        }
+                    }
+                    break;
+                case 'r':
+                    // Refresh data (mockup)
+                    showNotification('Refreshing data...');
+                    break;
+                case 'n':
+                    // Generate new note (mockup)
+                    if (currentView === 'notes' || currentView === 'flow') {
+                        showNotification('Generating new note...');
+                    }
+                    break;
+                case '/':
+                    // Focus search (mockup - no search box yet)
+                    e.preventDefault();
+                    showNotification('Search not yet implemented');
                     break;
                 case 's':
-                    if (sidebar.style.display === 'none') {
-                        main.classList.remove('no-sidebar');
-                        sidebar.style.display = 'flex';
-                    } else {
-                        main.classList.add('no-sidebar');
-                        sidebar.style.display = 'none';
+                    // Toggle sidebar (only affects Flow view)
+                    if (currentView === 'flow') {
+                        sidebarVisible = !sidebarVisible;
+                        if (sidebarVisible) {
+                            main.classList.remove('no-sidebar');
+                            sidebar.style.display = 'flex';
+                        } else {
+                            main.classList.add('no-sidebar');
+                            sidebar.style.display = 'none';
+                        }
                     }
                     break;
                 case '?':
