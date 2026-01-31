@@ -24,6 +24,9 @@ MIN_SAMPLES = 7
 # Maximum posts to consider for baseline
 MAX_BASELINE_POSTS = 30
 
+# Allowed metric names (whitelist for SQL safety)
+ALLOWED_METRICS = {"velocity_6h", "velocity_24h"}
+
 
 @dataclass
 class BaselineResult:
@@ -86,6 +89,10 @@ def compute_actor_baseline(
         is_valid=False
     )
 
+    # Validate metric name to prevent SQL injection
+    if metric not in ALLOWED_METRICS:
+        raise ValueError(f"Invalid metric: {metric}. Allowed: {ALLOWED_METRICS}")
+
     # Get age bucket bounds
     bucket_info = None
     for name, min_age, max_age in AGE_BUCKETS:
@@ -143,6 +150,10 @@ def compute_global_baseline(
         sample_count=0,
         is_valid=False
     )
+
+    # Validate metric name to prevent SQL injection
+    if metric not in ALLOWED_METRICS:
+        raise ValueError(f"Invalid metric: {metric}. Allowed: {ALLOWED_METRICS}")
 
     # Get age bucket bounds
     bucket_info = None
