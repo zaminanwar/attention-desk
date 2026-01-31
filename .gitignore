@@ -31,5 +31,5 @@ venv/
 .venv/
 env/
 
-# Notes output (uncomment to exclude from repo)
-# notes/
+# Notes output (generated files)
+notes/*.md
