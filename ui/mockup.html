@@ -1785,7 +1785,405 @@
     </div>
 
     <script>
+        // =====================================================================
+        // API Layer
+        // =====================================================================
+        const API = {
+            async getStats() {
+                const res = await fetch('/api/stats');
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                return res.json();
+            },
+            async getMovers(hours = 24) {
+                const res = await fetch(`/api/movers?hours=${hours}&limit=20`);
+                if (!res.ok) throw new Error('Failed to fetch movers');
+                return res.json();
+            },
+            async getClusters(hours = 48) {
+                const res = await fetch(`/api/clusters?hours=${hours}`);
+                if (!res.ok) throw new Error('Failed to fetch clusters');
+                return res.json();
+            },
+            async getActors() {
+                const res = await fetch('/api/actors');
+                if (!res.ok) throw new Error('Failed to fetch actors');
+                return res.json();
+            },
+            async getStatus() {
+                const res = await fetch('/api/status');
+                if (!res.ok) throw new Error('Failed to fetch status');
+                return res.json();
+            },
+            async getPost(postId) {
+                const res = await fetch(`/api/post/${encodeURIComponent(postId)}`);
+                if (!res.ok) throw new Error('Failed to fetch post');
+                return res.json();
+            },
+            async getNotes() {
+                const res = await fetch('/api/notes');
+                if (!res.ok) throw new Error('Failed to fetch notes');
+                return res.json();
+            }
+        };
+
+        // =====================================================================
+        // Helper Functions
+        // =====================================================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatAge(hours) {
+            if (hours == null) return '—';
+            if (hours < 1) return `${Math.round(hours * 60)}m`;
+            if (hours < 24) return `${Math.round(hours)}h`;
+            return `${Math.round(hours / 24)}d`;
+        }
+
+        function formatNumber(num) {
+            if (num == null) return '—';
+            if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+            if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+            return num.toString();
+        }
+
+        function formatZ(z) {
+            if (z == null) return '—';
+            return (z >= 0 ? '+' : '') + z.toFixed(1);
+        }
+
+        function getFlowClass(score) {
+            if (score == null) return '';
+            if (score >= 6) return 'high';
+            if (score >= 3) return 'medium';
+            return 'low';
+        }
+
+        function getZClass(z) {
+            if (z == null) return '';
+            if (z >= 5) return 'exceptional';
+            if (z >= 3) return 'high';
+            return '';
+        }
+
+        function renderSparkline(velocityHistory) {
+            // Generate a simple placeholder sparkline
+            const bars = [30, 45, 55, 65, 75, 85].map((h, i) =>
+                `<div class="sparkline-bar rising" style="height: ${h}%"></div>`
+            ).join('');
+            return `<div class="sparkline">${bars}</div>`;
+        }
+
+        function timeAgo(isoString) {
+            if (!isoString) return '—';
+            try {
+                const date = new Date(isoString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                if (diffMins < 60) return `${diffMins}m ago`;
+                const diffHours = Math.floor(diffMins / 60);
+                if (diffHours < 24) return `${diffHours}h ago`;
+                const diffDays = Math.floor(diffHours / 24);
+                return `${diffDays}d ago`;
+            } catch {
+                return '—';
+            }
+        }
+
+        // =====================================================================
+        // Render Functions
+        // =====================================================================
+        function renderStatsBar(stats) {
+            const statBoxes = document.querySelectorAll('#view-flow .stat-box');
+            if (statBoxes.length >= 5) {
+                statBoxes[0].querySelector('.stat-value').innerHTML =
+                    `${stats.top_movers_count || 0} <span class="delta positive">+${stats.new_movers || 0} new</span>`;
+                statBoxes[1].querySelector('.stat-value').innerHTML =
+                    `${stats.active_clusters || 0}`;
+                statBoxes[2].querySelector('.stat-value').innerHTML =
+                    `${stats.actors_tracked || 0}`;
+                statBoxes[3].querySelector('.stat-value').innerHTML =
+                    `${formatNumber(stats.posts_ingested || 0)}`;
+                statBoxes[4].querySelector('.stat-value').innerHTML =
+                    `${stats.avg_flow_score || 0}`;
+            }
+        }
+
+        function renderMoversTable(movers) {
+            const tbody = document.querySelector('#movers-table tbody');
+            if (!tbody) return;
+
+            if (movers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    No data yet. Run <code>python -m src.run ingest</code> to collect data.
+                </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = movers.map((m, i) => `
+                <tr data-index="${i}" data-post-id="${escapeHtml(m.post_id)}">
+                    <td class="rank">${i + 1}</td>
+                    <td><span class="source-badge ${m.source}"></span><span class="post-title">${escapeHtml(m.title)}</span></td>
+                    <td><span class="actor-name ${m.source}">${escapeHtml(m.actor_label)}</span></td>
+                    <td class="numeric"><span class="flow-score ${getFlowClass(m.flow_score)}">${m.flow_score?.toFixed(1) || '—'}</span></td>
+                    <td class="numeric"><span class="z-score ${getZClass(m.z_views_6h)}">${formatZ(m.z_views_6h)}</span></td>
+                    <td>${renderSparkline()}</td>
+                    <td class="numeric"><span class="time-ago">${formatAge(m.post_age_hours)}</span></td>
+                </tr>
+            `).join('');
+
+            attachRowHandlers();
+        }
+
+        function renderClusters(clusters) {
+            const container = document.querySelector('#view-flow .cluster-list');
+            if (!container) return;
+
+            if (clusters.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    No clusters detected yet.
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = clusters.map(c => `
+                <div class="cluster-item" tabindex="0">
+                    <div class="cluster-header">
+                        <div class="cluster-title">${escapeHtml(c.summary)}</div>
+                        <div class="cluster-strength">${c.strength?.toFixed(2) || '—'}</div>
+                    </div>
+                    <div class="cluster-meta">
+                        <span>${c.member_count || 0} posts</span>
+                        <span>${c.unique_actor_count || 0} actors</span>
+                        <span>${timeAgo(c.ts)}</span>
+                    </div>
+                    <div class="cluster-actors">
+                        ${Array(Math.min(c.unique_actor_count || 0, 5)).fill(0).map(() =>
+                            `<div class="cluster-actor-dot" style="background: var(--${c.source || 'accent-blue'})"></div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderActorsTable(actors) {
+            const tbody = document.querySelector('#actors-table tbody');
+            if (!tbody) return;
+
+            if (actors.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    No actors tracked yet.
+                </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = actors.map(a => `
+                <tr>
+                    <td><span class="source-badge ${a.source}"></span>${a.source === 'youtube' ? 'YouTube' : 'Reddit'}</td>
+                    <td><span class="actor-name ${a.source}">${escapeHtml(a.label)}</span></td>
+                    <td class="numeric">${a.post_count || 0}</td>
+                    <td><span class="badge ${a.baseline_status}">${a.baseline_status === 'ready' ? 'Ready' : 'Cold'}</span></td>
+                    <td class="numeric">${a.median_velocity ? formatNumber(a.median_velocity) : '—'}</td>
+                    <td class="numeric">${a.mad ? formatNumber(a.mad) : '—'}</td>
+                    <td><span class="time-ago">${timeAgo(a.last_post_at)}</span></td>
+                    <td>${a.status ? `<span class="badge ${a.status}">${a.status.charAt(0).toUpperCase() + a.status.slice(1)}</span>` : ''}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderActorsStats(actors) {
+            const statBoxes = document.querySelectorAll('#view-actors .stat-box');
+            if (statBoxes.length >= 5) {
+                const ytCount = actors.filter(a => a.source === 'youtube').length;
+                const rdCount = actors.filter(a => a.source === 'reddit').length;
+                const withBaseline = actors.filter(a => a.has_baseline).length;
+                const coldStart = actors.filter(a => !a.has_baseline).length;
+
+                statBoxes[0].querySelector('.stat-value').textContent = actors.length;
+                statBoxes[1].querySelector('.stat-value').textContent = ytCount;
+                statBoxes[2].querySelector('.stat-value').textContent = rdCount;
+                statBoxes[3].querySelector('.stat-value').textContent = withBaseline;
+                statBoxes[4].querySelector('.stat-value').textContent = coldStart;
+            }
+        }
+
+        function renderStatus(status) {
+            // Update header status
+            const headerRight = document.querySelector('.header-right');
+            if (headerRight && status.last_run) {
+                const indicators = headerRight.querySelectorAll('.status-indicator');
+                if (indicators[0]) {
+                    const mins = status.last_run.minutes_ago;
+                    indicators[0].innerHTML = `<span class="status-dot ${mins > 60 ? 'warning' : ''} live-indicator"></span>
+                        <span>Last ingest: ${mins != null ? mins + 'm ago' : 'Never'}</span>`;
+                }
+                if (indicators[2] && status.last_run.run_id) {
+                    indicators[2].innerHTML = `<span>Run #${status.database.runs_count || '?'}</span>`;
+                }
+            }
+
+            // Update status view cards
+            const dbCard = document.querySelector('#view-status .status-card:nth-child(3) .status-card-content');
+            if (dbCard && status.database) {
+                dbCard.innerHTML = `
+                    <div class="status-row"><span class="status-row-label">Posts</span><span class="status-row-value">${formatNumber(status.database.posts_count)}</span></div>
+                    <div class="status-row"><span class="status-row-label">Snapshots</span><span class="status-row-value">${formatNumber(status.database.snapshots_count)}</span></div>
+                    <div class="status-row"><span class="status-row-label">Actors</span><span class="status-row-value">${status.database.actors_count}</span></div>
+                `;
+            }
+        }
+
+        function renderNotes(notes) {
+            const container = document.querySelector('#view-notes .notes-list');
+            if (!container) return;
+
+            if (notes.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    No notes generated yet. Run <code>python -m src.run note</code> to generate a note.
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = notes.map(n => `
+                <div class="note-item" tabindex="0">
+                    <div class="note-icon">📄</div>
+                    <div class="note-info">
+                        <div class="note-date">${escapeHtml(n.note_date)}</div>
+                        <div class="note-stats">${n.movers_count} movers · ${n.clusters_count} clusters</div>
+                    </div>
+                    <div class="note-time">${timeAgo(n.generated_at)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderNotesStats(notes) {
+            const statBoxes = document.querySelectorAll('#view-notes .stat-box');
+            if (statBoxes.length >= 5) {
+                const avgMovers = notes.length > 0
+                    ? (notes.reduce((sum, n) => sum + n.movers_count, 0) / notes.length).toFixed(1)
+                    : 0;
+                const avgClusters = notes.length > 0
+                    ? (notes.reduce((sum, n) => sum + n.clusters_count, 0) / notes.length).toFixed(1)
+                    : 0;
+
+                statBoxes[0].querySelector('.stat-value').textContent = notes.length;
+                statBoxes[1].querySelector('.stat-value').textContent = Math.min(7, notes.length);
+                statBoxes[2].querySelector('.stat-value').textContent = avgMovers;
+                statBoxes[3].querySelector('.stat-value').textContent = avgClusters;
+            }
+        }
+
+        function attachRowHandlers() {
+            const table = document.getElementById('movers-table');
+            if (table) {
+                table.querySelectorAll('tbody tr').forEach((row, index) => {
+                    row.addEventListener('click', () => {
+                        selectedIndex = index;
+                        selectRow(index);
+                        // Load sidebar detail
+                        const postId = row.dataset.postId;
+                        if (postId) loadPostDetail(postId);
+                    });
+                });
+            }
+        }
+
+        async function loadPostDetail(postId) {
+            try {
+                const post = await API.getPost(postId);
+                const sidebar = document.getElementById('sidebar');
+                const detailSection = sidebar.querySelector('.sidebar-section:first-child .sidebar-content');
+                if (detailSection) {
+                    detailSection.innerHTML = `
+                        <div class="detail-title">${escapeHtml(post.title)}</div>
+                        <div class="detail-meta">
+                            <span><span class="source-badge ${post.source}"></span>${post.source === 'youtube' ? 'YouTube' : 'Reddit'}</span>
+                            <span>${escapeHtml(post.actor?.label || '')}</span>
+                            <span>${timeAgo(post.published_at)}</span>
+                        </div>
+                        <div class="detail-metrics">
+                            <div class="detail-metric">
+                                <div class="detail-metric-label">Flow Score</div>
+                                <div class="detail-metric-value accent">${post.metrics?.flow_score?.toFixed(1) || '—'}</div>
+                            </div>
+                            <div class="detail-metric">
+                                <div class="detail-metric-label">Z-Score (6h)</div>
+                                <div class="detail-metric-value">${formatZ(post.metrics?.z_views_6h)}</div>
+                            </div>
+                            <div class="detail-metric">
+                                <div class="detail-metric-label">Velocity 6h</div>
+                                <div class="detail-metric-value">${formatNumber(post.metrics?.velocity_6h)}</div>
+                            </div>
+                            <div class="detail-metric">
+                                <div class="detail-metric-label">Snapshots</div>
+                                <div class="detail-metric-value">${post.metrics?.snapshot_count || 0}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error('Failed to load post detail:', err);
+            }
+        }
+
+        // =====================================================================
+        // Initialization
+        // =====================================================================
+        let isLoading = false;
+
+        async function initializeApp() {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+                // Load all data in parallel
+                const [stats, movers, clusters, status] = await Promise.all([
+                    API.getStats().catch(() => ({})),
+                    API.getMovers(24).catch(() => []),
+                    API.getClusters(48).catch(() => []),
+                    API.getStatus().catch(() => ({}))
+                ]);
+
+                renderStatsBar(stats);
+                renderMoversTable(movers);
+                renderClusters(clusters);
+                renderStatus(status);
+
+                console.log('Dashboard loaded successfully');
+            } catch (err) {
+                console.error('Failed to initialize app:', err);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function loadActorsView() {
+            try {
+                const actors = await API.getActors();
+                renderActorsTable(actors);
+                renderActorsStats(actors);
+            } catch (err) {
+                console.error('Failed to load actors:', err);
+            }
+        }
+
+        async function loadNotesView() {
+            try {
+                const notes = await API.getNotes();
+                renderNotes(notes);
+                renderNotesStats(notes);
+            } catch (err) {
+                console.error('Failed to load notes:', err);
+            }
+        }
+
+        // =====================================================================
         // View switching
+        // =====================================================================
         const navItems = document.querySelectorAll('.nav-item');
         const views = document.querySelectorAll('.view');
         const main = document.getElementById('main');
@@ -1815,6 +2213,11 @@
                 main.classList.add('no-sidebar');
                 sidebar.style.display = 'none';
             }
+
+            // Load data for the view
+            if (viewId === 'actors') loadActorsView();
+            if (viewId === 'notes') loadNotesView();
+            if (viewId === 'status') API.getStatus().then(renderStatus).catch(console.error);
         }
 
         navItems.forEach(item => {
@@ -1903,8 +2306,11 @@
                     }
                     break;
                 case 'r':
-                    // Refresh data (mockup)
+                    // Refresh data
                     showNotification('Refreshing data...');
+                    initializeApp();
+                    if (currentView === 'actors') loadActorsView();
+                    if (currentView === 'notes') loadNotesView();
                     break;
                 case 'n':
                     // Generate new note (mockup)
@@ -1944,6 +2350,9 @@
                 helpModal.classList.remove('active');
             }
         });
+
+        // Initialize the app when the DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>

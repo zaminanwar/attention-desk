@@ -65,14 +65,28 @@ actors:
       label: "Entrepreneur"
 ```
 
+## UI Mockup
+
+A Bloomberg-style dashboard mockup is available at `ui/mockup.html`. Open it in a browser to preview the interface.
+
+**Features:**
+- **Flow view** - Top movers and emerging clusters
+- **Actors view** - Tracked YouTube channels and subreddits
+- **Clusters view** - Multi-actor topic clusters
+- **Notes view** - Daily Close Note history
+- **Status view** - System health and run history
+
+**Keyboard shortcuts:** `1-5` switch views, `j/k` navigate, `s` toggle sidebar, `?` help
+
+> Note: The UI is currently a static mockup with sample data. Backend integration is not yet implemented.
+
 ## Development
 
 See [PLAN.md](PLAN.md) for full implementation details.
 See [PROGRESS.md](PROGRESS.md) for current implementation status.
 
-## What This Is Not
+## Design Philosophy
 
-- Not a dashboard or UI
 - Not predictive or ML-based
 - Not automated alerts
 - Not recommendations or tactics

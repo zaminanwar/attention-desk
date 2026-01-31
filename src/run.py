@@ -10,6 +10,7 @@ Commands:
     note    - Generate Daily Close Note
     all     - Run ingest → score → note sequentially
     doctor  - Check API credentials, DB integrity, snapshot density
+    serve   - Start web server for the dashboard UI
 """
 
 import argparse
@@ -181,6 +182,22 @@ def cmd_all(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Start the web server."""
+    from .web.app import create_app
+
+    host = getattr(args, "host", "127.0.0.1")
+    port = getattr(args, "port", 5000)
+
+    console.print(f"[bold green]Starting Attention Flow Desk server...[/bold green]")
+    console.print(f"[bold]URL:[/bold] http://{host}:{port}")
+    console.print("[dim]Press Ctrl+C to stop[/dim]\n")
+
+    app = create_app()
+    app.run(host=host, port=port, debug=True)
+    return 0
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Check system health."""
     console.print("[bold blue]Running system health check...[/bold blue]\n")
@@ -300,6 +317,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     # doctor
     p_doctor = subparsers.add_parser("doctor", help="Check system health")
 
+    # serve
+    p_serve = subparsers.add_parser("serve", help="Start web server")
+    p_serve.add_argument("--host", default="127.0.0.1",
+                         help="Host to bind to (default: 127.0.0.1)")
+    p_serve.add_argument("--port", type=int, default=5000,
+                         help="Port to bind to (default: 5000)")
+
     args = parser.parse_args(argv)
 
     if args.command is None:
@@ -312,6 +336,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         "note": cmd_note,
         "all": cmd_all,
         "doctor": cmd_doctor,
+        "serve": cmd_serve,
     }
 
     return commands[args.command](args)
