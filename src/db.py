@@ -6,7 +6,7 @@ SQLite schema creation and connection management.
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Generator, Optional
 from uuid import uuid4
@@ -203,7 +203,7 @@ def get_connection(db_path: Optional[Path] = None) -> Generator[sqlite3.Connecti
 def create_run() -> str:
     """Create a new run record and return its ID."""
     run_id = str(uuid4())
-    started_at = datetime.utcnow().isoformat()
+    started_at = datetime.now(timezone.utc).isoformat()
 
     with get_connection() as conn:
         conn.execute(
@@ -221,7 +221,7 @@ def complete_run(
     counts: Optional[dict] = None
 ) -> None:
     """Mark a run as complete with status and optional metadata."""
-    ended_at = datetime.utcnow().isoformat()
+    ended_at = datetime.now(timezone.utc).isoformat()
 
     with get_connection() as conn:
         conn.execute(
@@ -316,7 +316,7 @@ def get_post(post_id: str) -> Optional[dict]:
 
 def get_recent_posts(hours: int = 72) -> list[dict]:
     """Get posts from the last N hours."""
-    cutoff = datetime.utcnow().isoformat()
+    cutoff = datetime.now(timezone.utc).isoformat()
     with get_connection() as conn:
         rows = conn.execute(
             """SELECT p.*, a.label as actor_label
@@ -438,7 +438,7 @@ def get_latest_derived_metrics(post_id: str) -> Optional[dict]:
 
 def get_top_movers(hours: int = 24, limit: int = 20) -> list[dict]:
     """Get top posts by flow score from the last N hours."""
-    cutoff = datetime.utcnow().isoformat()
+    cutoff = datetime.now(timezone.utc).isoformat()
     with get_connection() as conn:
         rows = conn.execute(
             """SELECT d.*, p.title, p.url, p.source, p.published_at, a.label as actor_label
@@ -467,7 +467,7 @@ def upsert_baseline(
     sample_count: int
 ) -> None:
     """Insert or update a baseline."""
-    computed_at = datetime.utcnow().isoformat()
+    computed_at = datetime.now(timezone.utc).isoformat()
     with get_connection() as conn:
         conn.execute(
             """INSERT INTO actor_baselines
@@ -538,7 +538,7 @@ def insert_cluster(
 
 def get_recent_clusters(hours: int = 48) -> list[dict]:
     """Get clusters from the last N hours."""
-    cutoff = datetime.utcnow().isoformat()
+    cutoff = datetime.now(timezone.utc).isoformat()
     with get_connection() as conn:
         rows = conn.execute(
             """SELECT * FROM clusters
@@ -560,7 +560,7 @@ def record_note(
     clusters_included: list[int]
 ) -> int:
     """Record a generated note and return its ID."""
-    generated_at = datetime.utcnow().isoformat()
+    generated_at = datetime.now(timezone.utc).isoformat()
     with get_connection() as conn:
         cursor = conn.execute(
             """INSERT INTO note_history
@@ -619,7 +619,7 @@ def get_db_stats() -> dict[str, Any]:
         stats["last_snapshot_at"] = row["last_snapshot"] if row else None
 
         # Snapshots in last 24h
-        cutoff = datetime.utcnow().isoformat()
+        cutoff = datetime.now(timezone.utc).isoformat()
         row = conn.execute(
             """SELECT COUNT(*) as cnt FROM snapshots
                WHERE datetime(ts) >= datetime(?, '-24 hours')""",
