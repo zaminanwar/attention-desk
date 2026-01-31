@@ -1,0 +1,32 @@
+# Attention Flow Desk - Watchlist Configuration
+#
+# This file defines what channels, subreddits, and topics to track.
+# Update with your actual targets before running.
+
+actors:
+  youtube:
+    # Add YouTube channels by ID (find in channel URL or via API)
+    # - channel_id: "UCxxxxxxxxxxxxxxxxxxxxxx"
+    #   label: "Channel Name"
+    - channel_id: "UCBcRF18a7Qf58cCRy5xuWwQ"
+      label: "MKBHD"
+
+  reddit:
+    # Add subreddits to track
+    - subreddit: "Entrepreneur"
+      label: "Entrepreneur"
+    - subreddit: "startups"
+      label: "Startups"
+
+# Topics for cluster labeling (optional)
+topics:
+  - "ai agents"
+  - "distribution"
+  - "founder"
+  - "growth"
+
+# Content format tags for annotation (optional, v1 annotation only)
+formats:
+  - "contrarian hook"
+  - "confession + lesson"
+  - "hot take + bullets"
