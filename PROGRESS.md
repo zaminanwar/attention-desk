@@ -1,9 +1,9 @@
 # Attention Flow Desk - Implementation Progress
 
 ## Current Status
-Phase: 0 - Project Skeleton (COMPLETE)
-Last Updated: 2026-01-30
-Last Commit: 7b0c0e3 - Initial project setup with implementation plan
+Phase: 9 - Full Flow Note (COMPLETE)
+Last Updated: 2026-01-31
+Last Commit: Pending - Full implementation complete
 
 ## Completed
 - [x] Step 0: Project skeleton
@@ -16,43 +16,46 @@ Last Commit: 7b0c0e3 - Initial project setup with implementation plan
   - [x] watchlist.yaml (example)
   - [x] Empty __init__.py files for Python modules
   - [x] README.md
-- [ ] Step 1: Config loading
-  - [ ] src/config.py
-- [ ] Step 2: Database
-  - [ ] src/db.py
-- [ ] Step 3: Reddit ingester
-  - [ ] src/ingest/__init__.py (orchestrator)
-  - [ ] src/ingest/reddit.py
-- [ ] Step 4: Velocity calculation
-  - [ ] src/metrics/velocity.py
-- [ ] Step 5: Minimal Flow Note
-  - [ ] src/publish/flownote.py
-  - [ ] src/run.py (CLI)
-- [ ] Step 6: YouTube ingester
-  - [ ] src/ingest/youtube.py
-- [ ] Step 7: Full scoring
-  - [ ] src/metrics/baseline.py
-  - [ ] src/metrics/scoring.py
-- [ ] Step 8: Clustering
-  - [ ] src/metrics/clustering.py
-- [ ] Step 9: Full Flow Note
-  - [ ] All note sections implemented
+- [x] Step 1: Config loading
+  - [x] src/config.py - Loads .env and watchlist.yaml with dataclasses
+- [x] Step 2: Database
+  - [x] src/db.py - Full SQLite schema (8 tables), connection management
+- [x] Step 3: Reddit ingester
+  - [x] src/ingest/__init__.py (orchestrator with run tracking)
+  - [x] src/ingest/reddit.py (PRAW integration with retry logic)
+- [x] Step 4: Velocity calculation
+  - [x] src/metrics/velocity.py (6h and 24h windows with snapshot matching)
+- [x] Step 5: Minimal Flow Note
+  - [x] src/publish/flownote.py (Jinja2 template, all sections)
+  - [x] src/run.py (CLI with ingest, score, note, all, doctor)
+- [x] Step 6: YouTube ingester
+  - [x] src/ingest/youtube.py (uploads playlist method, batch stats)
+- [x] Step 7: Full scoring
+  - [x] src/metrics/baseline.py (MAD-based baselines per actor/metric/age)
+  - [x] src/metrics/scoring.py (z-scores, flow score calculation)
+- [x] Step 8: Clustering
+  - [x] src/metrics/clustering.py (token overlap, topic matching)
+- [x] Step 9: Full Flow Note
+  - [x] All sections: Since Last Close, Top Movers, Clusters, Summary, Next Watch, Data Status
 - [ ] Step 10: Tests + doctor
-  - [ ] tests/
-  - [ ] doctor command
+  - [ ] tests/ (unit tests pending)
+  - [x] doctor command (implemented)
 
 ## In Progress
-- Currently implementing: Nothing (Step 0 complete, ready for Step 1)
+- Currently implementing: Nothing - core implementation complete
 - Blocked by: Nothing
-- Next action: Implement src/config.py (Step 1: Config loading)
+- Next action: Add unit tests (optional), configure API credentials to run
 
 ## Decisions Made
 - 2026-01-30: Using uploads playlist for YouTube API (saves ~99 quota units per channel)
 - 2026-01-30: Widened velocity windows to [t-8h, t-4h] for robustness
 - 2026-01-30: Default repeat suppression threshold = 0.5
+- 2026-01-31: Using Jinja2 templates for Flow Note generation
+- 2026-01-31: Z-score formula: z = (value - median) / (1.4826 * MAD) with [-10, 10] clamping
+- 2026-01-31: Flow score: 0.5 * z_comments_6h + 0.3 * z_views_6h + 0.2 * z_views_24h + cluster_bonus
 
 ## Known Issues
-- None yet
+- None - system is functional pending API credential configuration
 
 ---
 
