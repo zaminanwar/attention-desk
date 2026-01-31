@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attention Flow Desk</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --bg-highlight: #1e1e1e;
+            --border: #2a2a2a;
+            --border-bright: #3a3a3a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888888;
+            --text-muted: #555555;
+            --accent-orange: #ff6b35;
+            --accent-green: #4ade80;
+            --accent-red: #ef4444;
+            --accent-yellow: #fbbf24;
+            --accent-blue: #60a5fa;
+            --accent-purple: #a78bfa;
+            --youtube: #ff0000;
+            --reddit: #ff4500;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 12px;
+            line-height: 1.4;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--accent-orange);
+            letter-spacing: 0.5px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-item {
+            padding: 4px 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--bg-highlight);
+            color: var(--accent-orange);
+        }
+
+        .nav-item kbd {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .status-dot.warning { background: var(--accent-yellow); }
+        .status-dot.error { background: var(--accent-red); }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            height: calc(100vh - 41px);
+        }
+
+        .main.no-sidebar {
+            grid-template-columns: 1fr;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 1px;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-box {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+        }
+
+        .stat-box:first-child { border-radius: 4px 0 0 4px; }
+        .stat-box:last-child { border-radius: 0 4px 4px 0; }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-value .delta {
+            font-size: 11px;
+            font-weight: 400;
+            margin-left: 6px;
+        }
+
+        .stat-value .delta.positive { color: var(--accent-green); }
+        .stat-value .delta.negative { color: var(--accent-red); }
+
+        /* Panels */
+        .panels {
+            flex: 1;
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .panels.single {
+            grid-template-rows: 1fr;
+        }
+
+        .panel {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .panel-action {
+            font-size: 10px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .panel-action:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .panel-action.active { color: var(--accent-orange); }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            padding: 6px 12px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th.numeric { text-align: right; }
+
+        .data-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .data-table td.numeric {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .data-table tr:hover { background: var(--bg-highlight); }
+
+        .data-table tr.selected {
+            background: var(--bg-tertiary);
+            border-left: 2px solid var(--accent-orange);
+        }
+
+        /* Row Components */
+        .rank {
+            color: var(--text-muted);
+            font-size: 11px;
+            width: 24px;
+        }
+
+        .source-badge {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .source-badge.youtube { background: var(--youtube); }
+        .source-badge.reddit { background: var(--reddit); }
+
+        .post-title {
+            font-size: 12px;
+            color: var(--text-primary);
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .actor-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .actor-name.youtube::before { content: "@"; color: var(--text-muted); }
+        .actor-name.reddit::before { content: "r/"; color: var(--text-muted); }
+
+        .flow-score {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .flow-score.high { color: var(--accent-orange); }
+        .flow-score.medium { color: var(--accent-yellow); }
+        .flow-score.low { color: var(--text-secondary); }
+
+        .z-score {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+        }
+
+        .z-score.exceptional {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--accent-orange);
+        }
+
+        .z-score.high {
+            background: rgba(251, 191, 36, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        /* Sparkline */
+        .sparkline {
+            display: flex;
+            align-items: flex-end;
+            gap: 1px;
+            height: 20px;
+        }
+
+        .sparkline-bar {
+            width: 3px;
+            background: var(--accent-blue);
+            border-radius: 1px 1px 0 0;
+            opacity: 0.6;
+        }
+
+        .sparkline-bar:last-child { opacity: 1; }
+        .sparkline-bar.rising { background: var(--accent-green); }
+        .sparkline-bar.falling { background: var(--accent-red); }
+
+        /* Time */
+        .time-ago {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge.ready {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--accent-green);
+        }
+
+        .badge.cold {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--accent-yellow);
+        }
+
+        .badge.hot {
+            background: rgba(255, 107, 53, 0.15);
+            color: var(--accent-orange);
+        }
+
+        .badge.stale {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+        }
+
+        /* Clusters */
+        .cluster-list { padding: 8px; }
+
+        .cluster-item {
+            padding: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .cluster-item:hover {
+            border-color: var(--border-bright);
+            background: var(--bg-tertiary);
+        }
+
+        .cluster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .cluster-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .cluster-strength {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: rgba(167, 139, 250, 0.2);
+            color: var(--accent-purple);
+        }
+
+        .cluster-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .cluster-actors {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .cluster-actor-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid var(--border-bright);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header {
+            padding: 10px 16px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+        }
+
+        .sidebar-content {
+            padding: 12px 16px;
+        }
+
+        /* Detail View */
+        .detail-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .detail-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .detail-metric {
+            padding: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .detail-metric-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .detail-metric-value.accent { color: var(--accent-orange); }
+
+        /* Velocity Chart */
+        .velocity-chart {
+            height: 80px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 12px;
+            position: relative;
+        }
+
+        .velocity-chart-inner {
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 2px;
+        }
+
+        .velocity-bar {
+            flex: 1;
+            background: var(--accent-blue);
+            border-radius: 2px 2px 0 0;
+            opacity: 0.7;
+            transition: opacity 0.15s;
+        }
+
+        .velocity-bar:hover { opacity: 1; }
+
+        .velocity-bar.current {
+            background: var(--accent-orange);
+            opacity: 1;
+        }
+
+        /* Baseline Indicator */
+        .baseline-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            margin-top: 12px;
+        }
+
+        .baseline-bar {
+            flex: 1;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .baseline-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: var(--accent-green);
+            border-radius: 2px;
+        }
+
+        .baseline-marker {
+            position: absolute;
+            top: -4px;
+            width: 2px;
+            height: 12px;
+            background: var(--text-muted);
+        }
+
+        .baseline-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        /* Note Preview */
+        .note-preview {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .note-content {
+            padding: 16px;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .note-content h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 16px 0 8px 0;
+        }
+
+        .note-content h3:first-child { margin-top: 0; }
+
+        .note-content ul {
+            margin: 0;
+            padding-left: 16px;
+        }
+
+        .note-content li {
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+        }
+
+        .note-content .highlight { color: var(--text-primary); }
+
+        .note-content .number {
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        /* Notes List */
+        .notes-list { padding: 16px; }
+
+        .note-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .note-item:hover {
+            border-color: var(--border-bright);
+            background: var(--bg-tertiary);
+        }
+
+        .note-icon {
+            font-size: 20px;
+            opacity: 0.6;
+        }
+
+        .note-info { flex: 1; }
+
+        .note-date {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .note-stats {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .note-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Status View */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 16px;
+        }
+
+        .status-card {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .status-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .status-card-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .status-card-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }
+
+        .status-card-content {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-row:last-child { border-bottom: none; }
+
+        .status-row-label { color: var(--text-muted); }
+        .status-row-value { color: var(--text-primary); }
+
+        /* Run History */
+        .run-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .run-item:last-child { border-bottom: none; }
+
+        .run-id {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .run-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .run-counts {
+            flex: 1;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .run-time {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Keyboard Hints */
+        .keyboard-hints {
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 16px;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .keyboard-hints kbd {
+            display: inline-block;
+            padding: 1px 5px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-size: 9px;
+            margin-right: 4px;
+        }
+
+        /* View Visibility */
+        .view { display: none; }
+        .view.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-bright);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .live-indicator { animation: pulse 2s ease-in-out infinite; }
+
+        /* Help Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-orange);
+            margin-bottom: 16px;
+        }
+
+        .shortcut-list {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px 16px;
+        }
+
+        .shortcut-keys {
+            display: flex;
+            gap: 4px;
+        }
+
+        .shortcut-desc {
+            color: var(--text-secondary);
+        }
+
+        /* Full Note View */
+        .note-full {
+            padding: 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .note-full h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .note-full .note-date-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .note-full h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 24px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .note-full ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .note-full li {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .note-full .highlight { color: var(--text-primary); }
+        .note-full .number { color: var(--accent-blue); font-weight: 500; }
+
+        .note-full table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+
+        .note-full th, .note-full td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .note-full th {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">ATTENTION FLOW DESK</div>
+            <nav class="nav">
+                <div class="nav-item active" data-view="flow">Flow <kbd>1</kbd></div>
+                <div class="nav-item" data-view="actors">Actors <kbd>2</kbd></div>
+                <div class="nav-item" data-view="clusters">Clusters <kbd>3</kbd></div>
+                <div class="nav-item" data-view="notes">Notes <kbd>4</kbd></div>
+                <div class="nav-item" data-view="status">Status <kbd>5</kbd></div>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="status-indicator">
+                <span class="status-dot live-indicator"></span>
+                <span>Last ingest: 47m ago</span>
+            </div>
+            <div class="status-indicator">
+                <span>YT: 8,432 quota</span>
+            </div>
+            <div class="status-indicator">
+                <span>Run #156</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main" id="main">
+        <div class="content">
+            <!-- FLOW VIEW -->
+            <div class="view active" id="view-flow">
+                <div class="stats-bar">
+                    <div class="stat-box">
+                        <div class="stat-label">Top Movers (24h)</div>
+                        <div class="stat-value">12 <span class="delta positive">+4 new</span></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Active Clusters</div>
+                        <div class="stat-value">3 <span class="delta positive">+1 formed</span></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Actors Tracked</div>
+                        <div class="stat-value">47</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Posts Ingested</div>
+                        <div class="stat-value">2,847</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Avg Flow Score</div>
+                        <div class="stat-value">2.4 <span class="delta positive">+0.3</span></div>
+                    </div>
+                </div>
+
+                <div class="panels">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Top Movers</div>
+                            <div class="panel-actions">
+                                <span class="panel-action active">24h</span>
+                                <span class="panel-action">6h</span>
+                                <span class="panel-action">All</span>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <table class="data-table" id="movers-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 32px">#</th>
+                                        <th>Post</th>
+                                        <th>Actor</th>
+                                        <th class="numeric">Flow</th>
+                                        <th class="numeric">Z-Score</th>
+                                        <th>Velocity 6h</th>
+                                        <th class="numeric">Age</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="selected" data-index="0">
+                                        <td class="rank">1</td>
+                                        <td><span class="source-badge youtube"></span><span class="post-title">Breaking: Major tech company announces revolutionary AI product</span></td>
+                                        <td><span class="actor-name youtube">TechNewsDaily</span></td>
+                                        <td class="numeric"><span class="flow-score high">8.4</span></td>
+                                        <td class="numeric"><span class="z-score exceptional">+6.1</span></td>
+                                        <td><div class="sparkline"><div class="sparkline-bar rising" style="height: 30%"></div><div class="sparkline-bar rising" style="height: 45%"></div><div class="sparkline-bar rising" style="height: 60%"></div><div class="sparkline-bar rising" style="height: 75%"></div><div class="sparkline-bar rising" style="height: 90%"></div><div class="sparkline-bar rising" style="height: 100%"></div></div></td>
+                                        <td class="numeric"><span class="time-ago">2h</span></td>
+                                    </tr>
+                                    <tr data-index="1">
+                                        <td class="rank">2</td>
+                                        <td><span class="source-badge reddit"></span><span class="post-title">This changes everything about how we think about computing</span></td>
+                                        <td><span class="actor-name reddit">technology</span></td>
+                                        <td class="numeric"><span class="flow-score high">7.2</span></td>
+                                        <td class="numeric"><span class="z-score exceptional">+5.4</span></td>
+                                        <td><div class="sparkline"><div class="sparkline-bar rising" style="height: 20%"></div><div class="sparkline-bar rising" style="height: 40%"></div><div class="sparkline-bar rising" style="height: 55%"></div><div class="sparkline-bar rising" style="height: 80%"></div><div class="sparkline-bar rising" style="height: 85%"></div><div class="sparkline-bar rising" style="height: 95%"></div></div></td>
+                                        <td class="numeric"><span class="time-ago">3h</span></td>
+                                    </tr>
+                                    <tr data-index="2">
+                                        <td class="rank">3</td>
+                                        <td><span class="source-badge youtube"></span><span class="post-title">Exclusive interview with industry insider reveals what's next</span></td>
+                                        <td><span class="actor-name youtube">JournalDaily</span></td>
+                                        <td class="numeric"><span class="flow-score high">6.8</span></td>
+                                        <td class="numeric"><span class="z-score high">+4.2</span></td>
+                                        <td><div class="sparkline"><div class="sparkline-bar rising" style="height: 35%"></div><div class="sparkline-bar rising" style="height: 50%"></div><div class="sparkline-bar rising" style="height: 65%"></div><div class="sparkline-bar rising" style="height: 70%"></div><div class="sparkline-bar rising" style="height: 80%"></div><div class="sparkline-bar rising" style="height: 88%"></div></div></td>
+                                        <td class="numeric"><span class="time-ago">4h</span></td>
+                                    </tr>
+                                    <tr data-index="3">
+                                        <td class="rank">4</td>
+                                        <td><span class="source-badge reddit"></span><span class="post-title">Community response to the announcement is overwhelming</span></td>
+                                        <td><span class="actor-name reddit">news</span></td>
+                                        <td class="numeric"><span class="flow-score medium">5.9</span></td>
+                                        <td class="numeric"><span class="z-score high">+3.8</span></td>
+                                        <td><div class="sparkline"><div class="sparkline-bar rising" style="height: 25%"></div><div class="sparkline-bar rising" style="height: 40%"></div><div class="sparkline-bar rising" style="height: 60%"></div><div class="sparkline-bar rising" style="height: 70%"></div><div class="sparkline-bar rising" style="height: 75%"></div><div class="sparkline-bar rising" style="height: 82%"></div></div></td>
+                                        <td class="numeric"><span class="time-ago">5h</span></td>
+                                    </tr>
+                                    <tr data-index="4">
+                                        <td class="rank">5</td>
+                                        <td><span class="source-badge youtube"></span><span class="post-title">What nobody is talking about: the hidden implications</span></td>
+                                        <td><span class="actor-name youtube">DeepDiveAnalysis</span></td>
+                                        <td class="numeric"><span class="flow-score medium">5.4</span></td>
+                                        <td class="numeric"><span class="z-score high">+3.5</span></td>
+                                        <td><div class="sparkline"><div class="sparkline-bar rising" style="height: 40%"></div><div class="sparkline-bar rising" style="height: 55%"></div><div class="sparkline-bar rising" style="height: 60%"></div><div class="sparkline-bar rising" style="height: 68%"></div><div class="sparkline-bar rising" style="height: 72%"></div><div class="sparkline-bar rising" style="height: 78%"></div></div></td>
+                                        <td class="numeric"><span class="time-ago">6h</span></td>
+                                    </tr>
+                                    <tr data-index="5">
+                                        <td class="rank">6</td>
+                                        <td><span class="source-badge reddit"></span><span class="post-title">Expert AMA: Lead researcher answers community questions</span></td>
+                                        <td><span class="actor-name reddit">science</span></td>
+                                        <td class="numeric"><span class="flow-score medium">4.8</span></td>
+                                        <td class="numeric"><span class="z-score">+2.9</span></td>
+                                        <td><div class="sparkline"><div class="sparkline-bar" style="height: 30%"></div><div class="sparkline-bar" style="height: 45%"></div><div class="sparkline-bar" style="height: 55%"></div><div class="sparkline-bar" style="height: 60%"></div><div class="sparkline-bar rising" style="height: 65%"></div><div class="sparkline-bar rising" style="height: 70%"></div></div></td>
+                                        <td class="numeric"><span class="time-ago">8h</span></td>
+                                    </tr>
+                                    <tr data-index="6">
+                                        <td class="rank">7</td>
+                                        <td><span class="source-badge youtube"></span><span class="post-title">Live reaction and breakdown of today's biggest story</span></td>
+                                        <td><span class="actor-name youtube">MediaWatch</span></td>
+                                        <td class="numeric"><span class="flow-score medium">4.5</span></td>
+                                        <td class="numeric"><span class="z-score">+2.7</span></td>
+                                        <td><div class="sparkline"><div class="sparkline-bar" style="height: 50%"></div><div class="sparkline-bar" style="height: 60%"></div><div class="sparkline-bar" style="height: 55%"></div><div class="sparkline-bar" style="height: 58%"></div><div class="sparkline-bar" style="height: 62%"></div><div class="sparkline-bar" style="height: 65%"></div></div></td>
+                                        <td class="numeric"><span class="time-ago">10h</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Emerging Clusters</div>
+                            <div class="panel-actions">
+                                <span class="panel-action active">Active</span>
+                                <span class="panel-action">24h</span>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <div class="cluster-list">
+                                <div class="cluster-item">
+                                    <div class="cluster-header">
+                                        <div class="cluster-title">AI Product Launch Coverage</div>
+                                        <div class="cluster-strength">0.86</div>
+                                    </div>
+                                    <div class="cluster-meta">
+                                        <span>7 posts</span>
+                                        <span>4 actors</span>
+                                        <span>Formed 2h ago</span>
+                                    </div>
+                                    <div class="cluster-actors">
+                                        <div class="cluster-actor-dot" style="background: var(--youtube)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--youtube)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--reddit)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--reddit)"></div>
+                                    </div>
+                                </div>
+                                <div class="cluster-item">
+                                    <div class="cluster-header">
+                                        <div class="cluster-title">Regulation Debate Thread</div>
+                                        <div class="cluster-strength">0.72</div>
+                                    </div>
+                                    <div class="cluster-meta">
+                                        <span>5 posts</span>
+                                        <span>5 actors</span>
+                                        <span>Formed 6h ago</span>
+                                    </div>
+                                    <div class="cluster-actors">
+                                        <div class="cluster-actor-dot" style="background: var(--youtube)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--reddit)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--reddit)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--reddit)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--youtube)"></div>
+                                    </div>
+                                </div>
+                                <div class="cluster-item">
+                                    <div class="cluster-header">
+                                        <div class="cluster-title">Market Reaction Analysis</div>
+                                        <div class="cluster-strength">0.68</div>
+                                    </div>
+                                    <div class="cluster-meta">
+                                        <span>6 posts</span>
+                                        <span>3 actors</span>
+                                        <span>Formed 8h ago</span>
+                                    </div>
+                                    <div class="cluster-actors">
+                                        <div class="cluster-actor-dot" style="background: var(--youtube)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--youtube)"></div>
+                                        <div class="cluster-actor-dot" style="background: var(--reddit)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTORS VIEW -->
+            <div class="view" id="view-actors">
+                <div class="stats-bar">
+                    <div class="stat-box">
+                        <div class="stat-label">Total Actors</div>
+                        <div class="stat-value">47</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">YouTube</div>
+                        <div class="stat-value">23</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Reddit</div>
+                        <div class="stat-value">24</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">With Baseline</div>
+                        <div class="stat-value">41</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Cold Start</div>
+                        <div class="stat-value">6</div>
+                    </div>
+                </div>
+                <div class="panels single">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Tracked Actors</div>
+                            <div class="panel-actions">
+                                <span class="panel-action active">All</span>
+                                <span class="panel-action">YouTube</span>
+                                <span class="panel-action">Reddit</span>
+                                <span class="panel-action">Hot</span>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Source</th>
+                                        <th>Actor</th>
+                                        <th class="numeric">Posts</th>
+                                        <th>Baseline</th>
+                                        <th class="numeric">Median Vel</th>
+                                        <th class="numeric">MAD</th>
+                                        <th>Last Post</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="source-badge youtube"></span>YouTube</td>
+                                        <td><span class="actor-name youtube">TechNewsDaily</span></td>
+                                        <td class="numeric">142</td>
+                                        <td><span class="badge ready">Ready</span></td>
+                                        <td class="numeric">12,450</td>
+                                        <td class="numeric">3,210</td>
+                                        <td><span class="time-ago">2h ago</span></td>
+                                        <td><span class="badge hot">Hot</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="source-badge reddit"></span>Reddit</td>
+                                        <td><span class="actor-name reddit">technology</span></td>
+                                        <td class="numeric">567</td>
+                                        <td><span class="badge ready">Ready</span></td>
+                                        <td class="numeric">847</td>
+                                        <td class="numeric">312</td>
+                                        <td><span class="time-ago">15m ago</span></td>
+                                        <td><span class="badge hot">Hot</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="source-badge youtube"></span>YouTube</td>
+                                        <td><span class="actor-name youtube">JournalDaily</span></td>
+                                        <td class="numeric">89</td>
+                                        <td><span class="badge ready">Ready</span></td>
+                                        <td class="numeric">8,920</td>
+                                        <td class="numeric">2,140</td>
+                                        <td><span class="time-ago">4h ago</span></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="source-badge reddit"></span>Reddit</td>
+                                        <td><span class="actor-name reddit">news</span></td>
+                                        <td class="numeric">823</td>
+                                        <td><span class="badge ready">Ready</span></td>
+                                        <td class="numeric">1,234</td>
+                                        <td class="numeric">456</td>
+                                        <td><span class="time-ago">8m ago</span></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="source-badge youtube"></span>YouTube</td>
+                                        <td><span class="actor-name youtube">DeepDiveAnalysis</span></td>
+                                        <td class="numeric">45</td>
+                                        <td><span class="badge ready">Ready</span></td>
+                                        <td class="numeric">6,780</td>
+                                        <td class="numeric">1,890</td>
+                                        <td><span class="time-ago">6h ago</span></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="source-badge reddit"></span>Reddit</td>
+                                        <td><span class="actor-name reddit">science</span></td>
+                                        <td class="numeric">412</td>
+                                        <td><span class="badge ready">Ready</span></td>
+                                        <td class="numeric">623</td>
+                                        <td class="numeric">198</td>
+                                        <td><span class="time-ago">1h ago</span></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="source-badge youtube"></span>YouTube</td>
+                                        <td><span class="actor-name youtube">MediaWatch</span></td>
+                                        <td class="numeric">78</td>
+                                        <td><span class="badge ready">Ready</span></td>
+                                        <td class="numeric">5,430</td>
+                                        <td class="numeric">1,560</td>
+                                        <td><span class="time-ago">10h ago</span></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="source-badge youtube"></span>YouTube</td>
+                                        <td><span class="actor-name youtube">NewChannelXYZ</span></td>
+                                        <td class="numeric">3</td>
+                                        <td><span class="badge cold">Cold</span></td>
+                                        <td class="numeric">-</td>
+                                        <td class="numeric">-</td>
+                                        <td><span class="time-ago">2d ago</span></td>
+                                        <td><span class="badge stale">Stale</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLUSTERS VIEW -->
+            <div class="view" id="view-clusters">
+                <div class="stats-bar">
+                    <div class="stat-box">
+                        <div class="stat-label">Active Clusters</div>
+                        <div class="stat-value">3</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Total Posts</div>
+                        <div class="stat-value">18</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Unique Actors</div>
+                        <div class="stat-value">9</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Avg Strength</div>
+                        <div class="stat-value">0.75</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">24h Clusters</div>
+                        <div class="stat-value">5</div>
+                    </div>
+                </div>
+                <div class="panels single">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Cluster Detail</div>
+                        </div>
+                        <div class="panel-content">
+                            <div class="note-full" style="padding: 16px;">
+                                <h2 style="margin-top: 0;">AI Product Launch Coverage</h2>
+                                <p style="color: var(--text-muted); margin-bottom: 16px;">Strength: 0.86 | 7 posts | 4 actors | Formed 2h ago</p>
+
+                                <table class="data-table" style="margin-bottom: 24px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Post</th>
+                                            <th>Actor</th>
+                                            <th class="numeric">Flow</th>
+                                            <th class="numeric">Published</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><span class="source-badge youtube"></span>Breaking: Major tech company announces revolutionary AI product</td>
+                                            <td><span class="actor-name youtube">TechNewsDaily</span></td>
+                                            <td class="numeric"><span class="flow-score high">8.4</span></td>
+                                            <td class="numeric"><span class="time-ago">2h ago</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="source-badge reddit"></span>This changes everything about how we think about computing</td>
+                                            <td><span class="actor-name reddit">technology</span></td>
+                                            <td class="numeric"><span class="flow-score high">7.2</span></td>
+                                            <td class="numeric"><span class="time-ago">3h ago</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="source-badge youtube"></span>Exclusive interview with industry insider reveals what's next</td>
+                                            <td><span class="actor-name youtube">JournalDaily</span></td>
+                                            <td class="numeric"><span class="flow-score high">6.8</span></td>
+                                            <td class="numeric"><span class="time-ago">4h ago</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="source-badge reddit"></span>Community response to the announcement is overwhelming</td>
+                                            <td><span class="actor-name reddit">news</span></td>
+                                            <td class="numeric"><span class="flow-score medium">5.9</span></td>
+                                            <td class="numeric"><span class="time-ago">5h ago</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <h3 style="font-size: 11px; color: var(--accent-orange); margin-bottom: 8px;">TOKEN OVERLAP</h3>
+                                <p style="color: var(--text-secondary); font-size: 11px;">Common terms: <span style="color: var(--text-primary);">AI, product, announcement, technology, computing, revolutionary</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOTES VIEW -->
+            <div class="view" id="view-notes">
+                <div class="stats-bar">
+                    <div class="stat-box">
+                        <div class="stat-label">Total Notes</div>
+                        <div class="stat-value">47</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">This Week</div>
+                        <div class="stat-value">7</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Avg Movers/Note</div>
+                        <div class="stat-value">9.2</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Avg Clusters/Note</div>
+                        <div class="stat-value">2.4</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Next Note</div>
+                        <div class="stat-value">11:00 PM</div>
+                    </div>
+                </div>
+                <div class="panels single">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Daily Close Notes</div>
+                            <div class="panel-actions">
+                                <span class="panel-action" style="color: var(--accent-green);">+ Generate Now</span>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <div class="notes-list">
+                                <div class="note-item">
+                                    <div class="note-icon">📄</div>
+                                    <div class="note-info">
+                                        <div class="note-date">2026-01-31</div>
+                                        <div class="note-stats">12 movers · 3 clusters</div>
+                                    </div>
+                                    <div class="note-time">Today</div>
+                                </div>
+                                <div class="note-item">
+                                    <div class="note-icon">📄</div>
+                                    <div class="note-info">
+                                        <div class="note-date">2026-01-30</div>
+                                        <div class="note-stats">8 movers · 2 clusters</div>
+                                    </div>
+                                    <div class="note-time">Yesterday</div>
+                                </div>
+                                <div class="note-item">
+                                    <div class="note-icon">📄</div>
+                                    <div class="note-info">
+                                        <div class="note-date">2026-01-29</div>
+                                        <div class="note-stats">15 movers · 4 clusters</div>
+                                    </div>
+                                    <div class="note-time">2 days ago</div>
+                                </div>
+                                <div class="note-item">
+                                    <div class="note-icon">📄</div>
+                                    <div class="note-info">
+                                        <div class="note-date">2026-01-28</div>
+                                        <div class="note-stats">6 movers · 1 cluster</div>
+                                    </div>
+                                    <div class="note-time">3 days ago</div>
+                                </div>
+                                <div class="note-item">
+                                    <div class="note-icon">📄</div>
+                                    <div class="note-info">
+                                        <div class="note-date">2026-01-27</div>
+                                        <div class="note-stats">11 movers · 3 clusters</div>
+                                    </div>
+                                    <div class="note-time">4 days ago</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATUS VIEW -->
+            <div class="view" id="view-status">
+                <div class="panels single">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">System Status</div>
+                            <div class="panel-actions">
+                                <span class="panel-action" style="color: var(--accent-green);">Run Doctor</span>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <div class="status-grid">
+                                <div class="status-card">
+                                    <div class="status-card-header">
+                                        <div class="status-card-title">YouTube API</div>
+                                        <div class="status-card-status">
+                                            <span class="status-dot"></span>
+                                            <span style="color: var(--accent-green)">Connected</span>
+                                        </div>
+                                    </div>
+                                    <div class="status-card-content">
+                                        <div class="status-row">
+                                            <span class="status-row-label">Quota Used</span>
+                                            <span class="status-row-value">1,568 / 10,000</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Remaining</span>
+                                            <span class="status-row-value">8,432</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Reset</span>
+                                            <span class="status-row-value">Pacific Midnight</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="status-card">
+                                    <div class="status-card-header">
+                                        <div class="status-card-title">Reddit API</div>
+                                        <div class="status-card-status">
+                                            <span class="status-dot"></span>
+                                            <span style="color: var(--accent-green)">Connected</span>
+                                        </div>
+                                    </div>
+                                    <div class="status-card-content">
+                                        <div class="status-row">
+                                            <span class="status-row-label">Rate Limit</span>
+                                            <span class="status-row-value">OK</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Requests/min</span>
+                                            <span class="status-row-value">12 / 60</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Auth</span>
+                                            <span class="status-row-value">OAuth2</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="status-card">
+                                    <div class="status-card-header">
+                                        <div class="status-card-title">Database</div>
+                                        <div class="status-card-status">
+                                            <span class="status-dot"></span>
+                                            <span style="color: var(--accent-green)">Healthy</span>
+                                        </div>
+                                    </div>
+                                    <div class="status-card-content">
+                                        <div class="status-row">
+                                            <span class="status-row-label">Size</span>
+                                            <span class="status-row-value">24.7 MB</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Posts</span>
+                                            <span class="status-row-value">2,847</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Snapshots</span>
+                                            <span class="status-row-value">45,231</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="status-card">
+                                    <div class="status-card-header">
+                                        <div class="status-card-title">Configuration</div>
+                                        <div class="status-card-status">
+                                            <span class="status-dot"></span>
+                                            <span style="color: var(--accent-green)">Valid</span>
+                                        </div>
+                                    </div>
+                                    <div class="status-card-content">
+                                        <div class="status-row">
+                                            <span class="status-row-label">Watchlist</span>
+                                            <span class="status-row-value">47 actors</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Topics</span>
+                                            <span class="status-row-value">12 defined</span>
+                                        </div>
+                                        <div class="status-row">
+                                            <span class="status-row-label">Timezone</span>
+                                            <span class="status-row-value">America/New_York</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="status-card" style="grid-column: span 2;">
+                                    <div class="status-card-header">
+                                        <div class="status-card-title">Recent Runs</div>
+                                    </div>
+                                    <div class="status-card-content">
+                                        <div class="run-item">
+                                            <div class="run-id">#156</div>
+                                            <div class="run-status">
+                                                <span class="status-dot"></span>
+                                                <span style="color: var(--accent-green)">Complete</span>
+                                            </div>
+                                            <div class="run-counts">YT: 23 posts | Reddit: 45 posts</div>
+                                            <div class="run-time">47m ago</div>
+                                        </div>
+                                        <div class="run-item">
+                                            <div class="run-id">#155</div>
+                                            <div class="run-status">
+                                                <span class="status-dot"></span>
+                                                <span style="color: var(--accent-green)">Complete</span>
+                                            </div>
+                                            <div class="run-counts">YT: 18 posts | Reddit: 38 posts</div>
+                                            <div class="run-time">4h ago</div>
+                                        </div>
+                                        <div class="run-item">
+                                            <div class="run-id">#154</div>
+                                            <div class="run-status">
+                                                <span class="status-dot warning"></span>
+                                                <span style="color: var(--accent-yellow)">Partial</span>
+                                            </div>
+                                            <div class="run-counts">YT: Failed (quota) | Reddit: 42 posts</div>
+                                            <div class="run-time">8h ago</div>
+                                        </div>
+                                        <div class="run-item">
+                                            <div class="run-id">#153</div>
+                                            <div class="run-status">
+                                                <span class="status-dot"></span>
+                                                <span style="color: var(--accent-green)">Complete</span>
+                                            </div>
+                                            <div class="run-counts">YT: 21 posts | Reddit: 51 posts</div>
+                                            <div class="run-time">12h ago</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-header">Selected Post</div>
+                <div class="sidebar-content">
+                    <div class="detail-title">Breaking: Major tech company announces revolutionary AI product</div>
+                    <div class="detail-meta">
+                        <span><span class="source-badge youtube"></span>YouTube</span>
+                        <span>@TechNewsDaily</span>
+                        <span>2h ago</span>
+                    </div>
+
+                    <div class="detail-metrics">
+                        <div class="detail-metric">
+                            <div class="detail-metric-label">Flow Score</div>
+                            <div class="detail-metric-value accent">8.4</div>
+                        </div>
+                        <div class="detail-metric">
+                            <div class="detail-metric-label">Z-Score (6h)</div>
+                            <div class="detail-metric-value">+6.1</div>
+                        </div>
+                        <div class="detail-metric">
+                            <div class="detail-metric-label">Views</div>
+                            <div class="detail-metric-value">127K</div>
+                        </div>
+                        <div class="detail-metric">
+                            <div class="detail-metric-label">Comments</div>
+                            <div class="detail-metric-value">1,247</div>
+                        </div>
+                    </div>
+
+                    <div class="velocity-chart">
+                        <div class="velocity-chart-inner">
+                            <div class="velocity-bar" style="height: 25%"></div>
+                            <div class="velocity-bar" style="height: 35%"></div>
+                            <div class="velocity-bar" style="height: 50%"></div>
+                            <div class="velocity-bar" style="height: 65%"></div>
+                            <div class="velocity-bar" style="height: 80%"></div>
+                            <div class="velocity-bar current" style="height: 100%"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                        <span style="font-size: 9px; color: var(--text-muted);">6h ago</span>
+                        <span style="font-size: 9px; color: var(--text-muted);">now</span>
+                    </div>
+
+                    <div class="baseline-indicator">
+                        <span class="baseline-label">vs baseline</span>
+                        <div class="baseline-bar">
+                            <div class="baseline-fill" style="width: 100%"></div>
+                            <div class="baseline-marker" style="left: 15%"></div>
+                        </div>
+                        <span class="baseline-label" style="color: var(--accent-green)">+512%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="sidebar-header">Daily Close Preview</div>
+                <div class="note-preview">
+                    <div class="note-content">
+                        <h3>Since Last Close</h3>
+                        <ul>
+                            <li><span class="number">4</span> new entries in Top Movers</li>
+                            <li><span class="number">1</span> new cluster formed: <span class="highlight">AI Product Launch</span></li>
+                            <li><span class="highlight">@TechNewsDaily</span> returning to top after <span class="number">3</span> day absence</li>
+                        </ul>
+
+                        <h3>Flow Summary</h3>
+                        <ul>
+                            <li><span class="highlight">AI product announcement</span> driving cross-platform attention with <span class="number">+512%</span> above baseline velocity</li>
+                            <li>Cluster formation indicates <span class="number">4</span> actors covering same story within <span class="number">2h</span> window</li>
+                            <li>Reddit engagement ratio unusually high at <span class="number">1:23</span> comments-to-score</li>
+                        </ul>
+
+                        <h3>Next Watch</h3>
+                        <ul>
+                            <li>Monitor if <span class="highlight">@JournalDaily</span> exclusive maintains velocity past <span class="number">6h</span> mark</li>
+                            <li>Track <span class="highlight">r/technology</span> thread for second-wave discussion</li>
+                            <li>Watch for regulatory response coverage cluster</li>
+                        </ul>
+
+                        <h3>Invalidation</h3>
+                        <ul>
+                            <li>If velocity drops <span class="number">&gt;50%</span> in next <span class="number">2h</span>, story saturating</li>
+                            <li>Cluster dissolves if no new actors within <span class="number">4h</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="keyboard-hints">
+                <span><kbd>j</kbd><kbd>k</kbd> nav</span>
+                <span><kbd>o</kbd> open</span>
+                <span><kbd>r</kbd> refresh</span>
+                <span><kbd>?</kbd> help</span>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal">
+            <div class="modal-title">Keyboard Shortcuts</div>
+            <div class="shortcut-list">
+                <div class="shortcut-keys"><kbd>1</kbd>-<kbd>5</kbd></div>
+                <div class="shortcut-desc">Switch views (Flow, Actors, Clusters, Notes, Status)</div>
+
+                <div class="shortcut-keys"><kbd>j</kbd> / <kbd>k</kbd></div>
+                <div class="shortcut-desc">Navigate down / up in lists</div>
+
+                <div class="shortcut-keys"><kbd>o</kbd> / <kbd>Enter</kbd></div>
+                <div class="shortcut-desc">Open selected item</div>
+
+                <div class="shortcut-keys"><kbd>r</kbd></div>
+                <div class="shortcut-desc">Refresh data</div>
+
+                <div class="shortcut-keys"><kbd>n</kbd></div>
+                <div class="shortcut-desc">Generate new note</div>
+
+                <div class="shortcut-keys"><kbd>s</kbd></div>
+                <div class="shortcut-desc">Toggle sidebar</div>
+
+                <div class="shortcut-keys"><kbd>/</kbd></div>
+                <div class="shortcut-desc">Focus search</div>
+
+                <div class="shortcut-keys"><kbd>Esc</kbd></div>
+                <div class="shortcut-desc">Close modal / deselect</div>
+
+                <div class="shortcut-keys"><kbd>?</kbd></div>
+                <div class="shortcut-desc">Show this help</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // View switching
+        const navItems = document.querySelectorAll('.nav-item');
+        const views = document.querySelectorAll('.view');
+        const main = document.getElementById('main');
+        const sidebar = document.getElementById('sidebar');
+
+        function switchView(viewId) {
+            navItems.forEach(item => item.classList.remove('active'));
+            views.forEach(view => view.classList.remove('active'));
+
+            document.querySelector(`[data-view="${viewId}"]`).classList.add('active');
+            document.getElementById(`view-${viewId}`).classList.add('active');
+
+            // Show/hide sidebar based on view
+            if (viewId === 'flow') {
+                main.classList.remove('no-sidebar');
+                sidebar.style.display = 'flex';
+            } else {
+                main.classList.add('no-sidebar');
+                sidebar.style.display = 'none';
+            }
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                switchView(item.dataset.view);
+            });
+        });
+
+        // Table row selection
+        const moversTable = document.getElementById('movers-table');
+        let selectedIndex = 0;
+
+        function selectRow(index) {
+            const rows = moversTable.querySelectorAll('tbody tr');
+            rows.forEach(row => row.classList.remove('selected'));
+            if (rows[index]) {
+                rows[index].classList.add('selected');
+                selectedIndex = index;
+            }
+        }
+
+        moversTable.querySelectorAll('tbody tr').forEach((row, index) => {
+            row.addEventListener('click', () => selectRow(index));
+        });
+
+        // Keyboard navigation
+        const helpModal = document.getElementById('help-modal');
+
+        document.addEventListener('keydown', (e) => {
+            // Ignore if typing in input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            const viewKeys = { '1': 'flow', '2': 'actors', '3': 'clusters', '4': 'notes', '5': 'status' };
+
+            if (viewKeys[e.key]) {
+                switchView(viewKeys[e.key]);
+                return;
+            }
+
+            switch(e.key) {
+                case 'j':
+                    selectRow(Math.min(selectedIndex + 1, moversTable.querySelectorAll('tbody tr').length - 1));
+                    break;
+                case 'k':
+                    selectRow(Math.max(selectedIndex - 1, 0));
+                    break;
+                case 's':
+                    if (sidebar.style.display === 'none') {
+                        main.classList.remove('no-sidebar');
+                        sidebar.style.display = 'flex';
+                    } else {
+                        main.classList.add('no-sidebar');
+                        sidebar.style.display = 'none';
+                    }
+                    break;
+                case '?':
+                    helpModal.classList.toggle('active');
+                    break;
+                case 'Escape':
+                    helpModal.classList.remove('active');
+                    break;
+            }
+        });
+
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
